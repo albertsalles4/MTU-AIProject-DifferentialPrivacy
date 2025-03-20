@@ -27,13 +27,6 @@ def compute_mia_attributes(model, X_train, X_test, y_train, y_test):
     labels_train = y_train.reshape(-1)
     labels_test = y_test.reshape(-1)
 
-    print(f"logits_train shape: {logits_train.shape}")
-    print(f"logits_test shape: {logits_test.shape}")
-    print(f"loss_train shape: {loss_train.shape}")
-    print(f"loss_test shape: {loss_test.shape}")
-    print(f"labels_train shape: {labels_train.shape}")
-    print(f"labels_test shape: {labels_test.shape}")
-
     return logits_train, logits_test, loss_train, loss_test, labels_train, labels_test
 
 
