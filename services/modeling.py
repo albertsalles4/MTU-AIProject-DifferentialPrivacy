@@ -108,7 +108,7 @@ def run_tuner(X_train, y_train, X_test, y_test):
 
     tuner = kt.RandomSearch(
         hypermodel,
-        objective=kt.Objective('val_precision', direction='max'),
+        objective=kt.Objective('val_recall', direction='max'),
         max_trials=10,         # Increase for a more thorough search
         executions_per_trial=1,
         directory='hyperparam_tuning',
@@ -183,30 +183,38 @@ def train_and_plot_results(X_train, y_train, X_test, y_test, best_hp, X_val=None
 
     # Plot the learning curve
     plt.figure()
-    plt.subplot(2, 2, 1)
     plt.plot(history.history['loss'], label='train')
     plt.plot(history.history['val_loss'], label='validation')
     plt.title('Loss')
     plt.legend()
     plt.grid(True)
-    plt.subplot(2, 2, 2)
+    plt.show()
+
+    plt.figure()
     plt.plot(history.history['auc'], label='train')
     plt.plot(history.history['val_auc'], label='validation')
     plt.title('AUC')
     plt.ylim(0, 1)
     plt.legend()
     plt.grid(True)
-    plt.subplot(2, 2, 3)
+    plt.show()
+
+    plt.figure()
     plt.plot(history.history['precision'], label='train')
     plt.plot(history.history['val_precision'], label='validation')
     plt.title('Precision')
     plt.ylim(0, 1)
     plt.legend()
     plt.grid(True)
-    plt.subplot(2, 2, 4)
+    plt.show()
+
+    plt.figure()
     plt.plot(history.history['recall'], label='train')
     plt.plot(history.history['val_recall'], label='validation')
     plt.title('Recall')
+    plt.ylim(0, 1)
+    plt.legend()
+    plt.grid(True)
     plt.show()
 
 
