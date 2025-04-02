@@ -7,6 +7,7 @@ import keras_tuner as kt
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout
 import matplotlib.pyplot as plt
+from tensorflow_privacy.privacy.optimizers.dp_optimizer_keras import DPKerasAdamOptimizer
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classification_report
 
 
@@ -40,10 +41,13 @@ def apply_smote(X_seq, y_seq, sampling_strategy=0.5):
 class LSTMHyperModel(kt.HyperModel):
 
 
-    def __init__(self, X_train, labels):
+    def __init__(self, X_train, labels, dp=False, dp_num_microbatches=1, noise_multiplier=1.0):
         super().__init__()
         self.X_train = X_train
         self.labels = labels
+        self.dp = dp
+        self.dp_num_microbatches = dp_num_microbatches
+        self.noise_multiplier = noise_multiplier
 
     def build(self, hp):
         # Tune the sequence length: choose from 5, 10, or 20
@@ -66,10 +70,24 @@ class LSTMHyperModel(kt.HyperModel):
         model.add(Dense(1, activation='sigmoid'))
 
         # Tune learning rate
-        learning_rate = hp.Float('learning_rate', min_value=1e-7, max_value=1e-3, sampling='LOG')
+
+        if not self.dp:
+            learning_rate = hp.Float('learning_rate', min_value=1e-7, max_value=1e-3, sampling='LOG')
+            optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate)
+        else:
+            print("Training with DP")
+            learning_rate = hp.Float('learning_rate', min_value=5e-3, max_value=1e-1, sampling='LOG')  
+            l2_norm_clip = hp.Float('l2_norm_clip', min_value=2.0, max_value=5.0)
+            optimizer = DPKerasAdamOptimizer(
+                l2_norm_clip=l2_norm_clip,
+                noise_multiplier=self.noise_multiplier,
+                num_microbatches=self.dp_num_microbatches,
+                learning_rate=learning_rate
+            )
+
         model.compile(
-            optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate),
-            loss='binary_focal_crossentropy',
+            optimizer=optimizer,
+            loss='binary_crossentropy',
             metrics=[
                 'accuracy',
                 tf.keras.metrics.Precision(name='precision'),
@@ -96,7 +114,7 @@ class LSTMHyperModel(kt.HyperModel):
         return model.fit(
             X_train_res, y_train_res,
             validation_data=(X_val_fit, y_val_fit),
-            epochs=10,
+            epochs=30,
             batch_size=32,
             **kwargs
         )

@@ -150,9 +150,10 @@ class DPLSTMModel:
             learning_rate=self.best_hp['learning_rate']
         )
         
+        loss = tf.keras.losses.BinaryFocalCrossentropy(from_logits=False, reduction=tf.keras.losses.Reduction.NONE)
         model.compile(
             optimizer=optimizer,
-            loss='binary_focal_crossentropy',
+            loss=loss,
             metrics=[
                 'accuracy',
                 tf.keras.metrics.Precision(name='precision'),
@@ -182,6 +183,10 @@ class DPLSTMModel:
         smote = SMOTE(random_state=42, sampling_strategy=0.25)
         X_train_res, y_train_res = smote.fit_resample(X_train_flat, self.y_train)
         X_train_res = X_train_res.reshape(-1, self.best_hp['sequence_length'], n_features)
+
+        print(f"Train shape: {X_train_res.shape}")
+        print(f"Val shape: {self.X_val.shape}")
+        print(f"Class balance: {np.unique(y_train_res, return_counts=True)}")
         
         # Train with DP
         history = self.model.fit(
