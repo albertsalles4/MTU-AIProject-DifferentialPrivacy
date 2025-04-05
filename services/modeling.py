@@ -114,23 +114,39 @@ class LSTMHyperModel(kt.HyperModel):
         return model.fit(
             X_train_res, y_train_res,
             validation_data=(X_val_fit, y_val_fit),
-            epochs=30,
+            epochs=10,
             batch_size=32,
             **kwargs
         )
-    
+
+import time
+
+class TimedTuner(kt.RandomSearch):
+    def run_trial(self, trial, *args, **kwargs):
+        start_time = time.time()
+        result = super().run_trial(trial, *args, **kwargs)
+        end_time = time.time()
+        run_time = end_time - start_time
+
+        trial.hyperparameters.values['run_time'] = run_time
+
+        print(f"Trial {trial.trial_id} took {run_time:.2f} seconds")
+        return result
+
+
 
 def run_tuner(X_train, y_train, X_test, y_test):
     # 4. Set Up and Run the Tuner  #
     hypermodel = LSTMHyperModel(X_train=X_train, labels=y_train)
 
-    tuner = kt.RandomSearch(
+    tuner = TimedTuner(
         hypermodel,
         objective=kt.Objective('val_recall', direction='max'),
         max_trials=10,         # Increase for a more thorough search
         executions_per_trial=1,
         directory='hyperparam_tuning',
-        project_name='credit_card_fraud_lstm'
+        project_name='credit_card_fraud_lstm',
+        seed=42,
     )
 
     # Since our HyperModel.fit() method handles data generation,
