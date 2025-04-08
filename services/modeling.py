@@ -211,7 +211,7 @@ def train_and_plot_results(X_train, y_train, X_test, y_test, best_hp, X_val=None
     history = model.fit(
         X_train, y_train,
         validation_data=(X_val, y_val),
-        epochs=10,
+        epochs=15,
         batch_size=32
     )
 
@@ -220,6 +220,8 @@ def train_and_plot_results(X_train, y_train, X_test, y_test, best_hp, X_val=None
     plt.plot(history.history['loss'], label='train')
     plt.plot(history.history['val_loss'], label='validation')
     plt.title('Loss')
+    plt.ylabel('Loss')
+    plt.xlabel('Epoch')
     plt.legend()
     plt.grid(True)
     plt.show()
@@ -229,6 +231,8 @@ def train_and_plot_results(X_train, y_train, X_test, y_test, best_hp, X_val=None
     plt.plot(history.history['val_auc'], label='validation')
     plt.title('AUC')
     plt.ylim(0, 1)
+    plt.ylabel('AUC')
+    plt.xlabel('Epoch')
     plt.legend()
     plt.grid(True)
     plt.show()
@@ -238,6 +242,8 @@ def train_and_plot_results(X_train, y_train, X_test, y_test, best_hp, X_val=None
     plt.plot(history.history['val_precision'], label='validation')
     plt.title('Precision')
     plt.ylim(0, 1)
+    plt.ylabel('Precision')
+    plt.xlabel('Epoch')
     plt.legend()
     plt.grid(True)
     plt.show()
@@ -247,6 +253,8 @@ def train_and_plot_results(X_train, y_train, X_test, y_test, best_hp, X_val=None
     plt.plot(history.history['val_recall'], label='validation')
     plt.title('Recall')
     plt.ylim(0, 1)
+    plt.ylabel('Recall')
+    plt.xlabel('Epoch')
     plt.legend()
     plt.grid(True)
     plt.show()
