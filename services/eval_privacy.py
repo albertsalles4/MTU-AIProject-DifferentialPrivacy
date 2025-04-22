@@ -62,3 +62,40 @@ def compute_mia_attacks(model, X_train, X_test, y_train, y_test):
     figure = plotting.plot_roc_curve(max_auc_attacker.roc_curve)
 
     return attacks_result, figure
+
+
+def compute_mia_attacks_with_preds(model, X_train, X_test, y_train, y_test):
+    train_preds = model.predict_proba(X_train)[:, 1]
+    test_preds = model.predict_proba(X_test)[:, 1]
+
+    train_probs = np.stack([1 - train_preds, train_preds], axis=1)
+    test_probs = np.stack([1 - test_preds, test_preds], axis=1)
+
+    labels_train = y_train.astype(int)
+    labels_test = y_test.astype(int)
+
+    attack_input = AttackInputData(
+        probs_train=train_probs,
+        probs_test=test_probs,
+        labels_train=labels_train,
+        labels_test=labels_test
+    )
+
+    slicing_spec = SlicingSpec(
+        entire_dataset=True,
+        by_class=True,
+        by_percentiles=True,
+        by_classification_correctness=True
+    )
+
+    attacks_result = mia.run_attacks(
+        attack_input,
+        slicing_spec,
+        attack_types=[AttackType.THRESHOLD_ATTACK, AttackType.LOGISTIC_REGRESSION]
+    )
+
+    max_auc_attacker = attacks_result.get_result_with_max_auc()
+
+    figure = plotting.plot_roc_curve(max_auc_attacker.roc_curve)
+
+    return attacks_result, figure

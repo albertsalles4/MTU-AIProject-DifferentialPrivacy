@@ -36,6 +36,15 @@ def apply_smote(X_seq, y_seq, sampling_strategy=0.5):
     return X_train_res, y_train_res
 
 
+def apply_smote_without_seq(X_train, y_train, sampling_strategy=0.25):
+    _, n_features_local = X_train.shape
+    smote = SMOTE(sampling_strategy=sampling_strategy, random_state=42)
+    X_train_res, y_train_res = smote.fit_resample(X_train, y_train)
+    X_train_res = X_train_res.reshape(-1, n_features_local)
+
+    return X_train_res, y_train_res
+
+
 # 3. Custom HyperModel that Tunes Sequence Length     #
 #    and Other Hyperparameters                        #
 class LSTMHyperModel(kt.HyperModel):
