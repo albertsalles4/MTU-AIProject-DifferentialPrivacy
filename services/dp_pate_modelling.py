@@ -90,7 +90,7 @@ def dp_pate_xgboost_time_series(
     student = xgb.train(
         student_params,
         d_public,
-        num_boost_round=500,
+        num_boost_round=100,
         evals=[(d_public, "train"), (d_val, "validation")],
         early_stopping_rounds=15,
         evals_result=evals_result,

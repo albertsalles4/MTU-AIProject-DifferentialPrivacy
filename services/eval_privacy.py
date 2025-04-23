@@ -46,8 +46,6 @@ def compute_mia_attacks(model, X_train, X_test, y_train, y_test):
 
     slicing_spec = SlicingSpec(
         entire_dataset=True,
-        by_class=True,
-        by_percentiles=True,
         by_classification_correctness=True
     )
 
@@ -83,8 +81,6 @@ def compute_mia_attacks_with_preds(model, X_train, X_test, y_train, y_test):
 
     slicing_spec = SlicingSpec(
         entire_dataset=True,
-        by_class=True,
-        by_percentiles=True,
         by_classification_correctness=True
     )
 
