@@ -50,13 +50,14 @@ def apply_smote_without_seq(X_train, y_train, sampling_strategy=0.25):
 class LSTMHyperModel(kt.HyperModel):
 
 
-    def __init__(self, X_train, labels, dp=False, dp_num_microbatches=1, noise_multiplier=1.0):
+    def __init__(self, X_train, labels, dp=False, dp_num_microbatches=1, noise_multiplier=1.0, apply_smote=True):
         super().__init__()
         self.X_train = X_train
         self.labels = labels
         self.dp = dp
         self.dp_num_microbatches = dp_num_microbatches
         self.noise_multiplier = noise_multiplier
+        self.apply_smote = apply_smote
 
     def build(self, hp):
         # Tune the sequence length: choose from 5, 10, or 20
@@ -116,12 +117,13 @@ class LSTMHyperModel(kt.HyperModel):
         # Apply SMOTE on the training set
         n_samples, seq_len, n_features_local = X_train_fit.shape
         X_train_flat = X_train_fit.reshape(n_samples, seq_len * n_features_local)
-        smote = SMOTE(random_state=42, sampling_strategy=0.25)
-        X_train_res, y_train_res = smote.fit_resample(X_train_flat, y_train_fit)
-        X_train_res = X_train_res.reshape(-1, seq_length, n_features_local)
+        if self.apply_smote:
+            smote = SMOTE(random_state=42, sampling_strategy=0.25)
+            X_train_flat, y_train_fit = smote.fit_resample(X_train_flat, y_train_fit)
+        X_train_res = X_train_flat.reshape(-1, seq_length, n_features_local)
 
         return model.fit(
-            X_train_res, y_train_res,
+            X_train_res, y_train_fit,
             validation_data=(X_val_fit, y_val_fit),
             epochs=10,
             batch_size=32,
@@ -144,17 +146,17 @@ class TimedTuner(kt.RandomSearch):
 
 
 
-def run_tuner(X_train, y_train, X_test, y_test):
+def run_tuner(X_train, y_train, X_test, y_test, apply_smote=True, name="credit_card_fraud_lstm", max_trials=10):
     # 4. Set Up and Run the Tuner  #
-    hypermodel = LSTMHyperModel(X_train=X_train, labels=y_train)
+    hypermodel = LSTMHyperModel(X_train=X_train, labels=y_train, apply_smote=apply_smote)
 
     tuner = TimedTuner(
         hypermodel,
         objective=kt.Objective('val_recall', direction='max'),
-        max_trials=10,         # Increase for a more thorough search
+        max_trials=max_trials,         # Increase for a more thorough search
         executions_per_trial=1,
         directory='hyperparam_tuning',
-        project_name='credit_card_fraud_lstm',
+        project_name=name,
         seed=42,
     )
 
@@ -170,15 +172,16 @@ def run_tuner(X_train, y_train, X_test, y_test):
     best_seq_length = best_hp.get('sequence_length')
 
     # For final evaluation, generate a test set using the best sequence length.
-    X_train_final, y_train_final = create_sequences(X_train, y_train, best_seq_length)
+    X_train_final, y_train_final_res = create_sequences(X_train, y_train, best_seq_length)
     X_test_final, y_test_final = create_sequences(X_test, y_test, best_seq_length)
 
     # Apply SMOTE on the training set
     n_samples, seq_len, n_features_local = X_train_final.shape
     X_train_final_flat = X_train_final.reshape(n_samples, seq_len * n_features_local)
-    smote = SMOTE(random_state=42, sampling_strategy=0.25)
-    X_train_final_res, y_train_final_res = smote.fit_resample(X_train_final_flat, y_train_final)
-    X_train_final_res = X_train_final_res.reshape(-1, best_seq_length, n_features_local)
+    if apply_smote:
+        smote = SMOTE(random_state=42, sampling_strategy=0.25)
+        X_train_final_flat, y_train_final_res = smote.fit_resample(X_train_final_flat, y_train_final_res)
+    X_train_final_res = X_train_final_flat.reshape(-1, best_seq_length, n_features_local)
 
     # Retrieve the best model and evaluate on the test set
     best_model = tuner.get_best_models(num_models=1)[0]
